@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+#
+#
+$head = 1;
+while( <> ) {
+    $head = 0 if (/^$/);
+    if ($head && s/^Subject:\s*Re:(\S+.*)/\1/i) {
+        s/^/Subject: Re: /;
+    }
+    print $_;
+}

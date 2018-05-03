@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+#
+
+$head = 1;
+while( <> ) {
+    $head = 0 if ( /^$/ );
+	if ($head && /From:.*/) {
+		s/[^m]*m//g;
+	}
+	print $_;
+}

@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+#
+#
+
+$head = 1;
+
+while( <> ) {
+    $head = 0 if (/^$/);
+    if ($head) {
+        s/^Subject:.* AW:/Subject: Re:/i;
+        s/^Subject:.* Antw:/Subject: Re:/i;
+        s/^Subject:.* Antwort:( Re:)?/Subject: Re:/i;
+    }
+    print $_;
+}

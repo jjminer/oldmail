@@ -1,0 +1,2 @@
+#!/bin/sh
+mailstat -k -l $1 | perl -n -e 'printf "%10s %10s %10s %s %s %s %s %s %s \n", split' 

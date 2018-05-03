@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+# 
+# killwinmail.pl, DESCRIPTION
+# 
+# Copyright (C) 2000 Jonathan J. Miner
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# $Id: killwinmail.pl,v 1.3 2000/09/06 20:26:05 miner Exp $
+# Jonathan J. Miner <miner@doit.wisc.edu>
+
+use MIME::Parser;
+
+my $parser = new MIME::Parser;
+
+$parser->output_to_core(1);
+
+$fromline = <STDIN>;
+
+$entity = $parser->parse(\*STDIN) or die "parse failed\n";
+
+foreach $inner ($entity->parts) {
+    push @good, $inner if ($inner->effective_type ne "application/ms-tnef");
+}
+
+$entity->parts(\@good);
+
+$entity->make_singlepart;
+
+print $fromline;
+$entity->print();

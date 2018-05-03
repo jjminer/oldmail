@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+#
+#
+$head = 1;
+while( <> ) {
+    $head = 0 if (/^$/);
+
+    s/^Subject:\s+(Re:\s*)?((Re(\[\d+\])*)+:\s*)*/Subject: Re: /i if ($head);
+    print $_;
+}

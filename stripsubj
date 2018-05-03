@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+#
+# $Id: stripsubj,v 1.2 1999/06/23 18:59:11 miner Exp $
+#
+
+$head = 1;
+
+while( <> ) {
+    s/^Subject: ([Rr][Ee]: )?\[\S+\]:?\s*/Subject: \1/ if ($head);
+    $_ .= "\n" unless( /\n$/ );
+    print $_;
+    $head = 0 if ($_ eq "\n");
+}

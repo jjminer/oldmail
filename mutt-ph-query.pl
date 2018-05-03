@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+
+#  mutt-ph-query.pl v0.1
+#
+#  Mutt external query program for ph/qi
+#
+#  Jay Kreibich, Research Programmer, CCSO, UIUC.
+#  jak@uiuc.edu
+
+
+require 5.002;
+
+use strict;
+use Socket;
+
+
+my( $remote, $port, $iaddr, $paddr );
+
+my( $query, $line, $code, $line_num, $email_domain );
+my( $current, $c_email, $c_name, $c_title, $c_division, $c_department );
+
+
+
+foreach (@ARGV) {
+    if (/^@(.*)/) {
+        $remote = $1;
+    } else {
+        $query = defined($query) ? "$query $_" : $_;
+    }
+}
+
+$remote ||= 'wisc.edu';
+$port = 105;
+$email_domain = 'wisc.edu';
+
+unless( $query ) { die "Usage: $0 <alias>\n"; }
+
+$iaddr = inet_aton( $remote ) or die "Could not lookup host: $remote";
+$paddr = sockaddr_in( $port, $iaddr );
+
+socket( SOCK, PF_INET, SOCK_STREAM, 0) or die "socket: $!";
+connect( SOCK, $paddr ) or die "connect: $!";
+
+select (SOCK); $| = 1; select(STDOUT);
+
+print SOCK "query $query return email name title division department\r\n";
+
+
+
+$line = <SOCK>;
+( $code, $current ) = split(':', $line);
+print STDOUT $current;
+if( $code >= 200 ) { exit; }
+
+
+$current = 1;
+$c_email = '';
+$c_name = '';
+$c_title = '';
+$c_division = '';
+$c_department = '';
+
+while( $line = <SOCK> ) 
+{
+#    print $line;
+	chomp $line;
+	( $code, $line_num ) = split(':', $line);
+	last if( $code >= 200 );
+	next if( $code != -200 );
+
+	if( $line_num != $current )
+	{
+		&PrintEntry($c_email, $c_name, $c_title, $c_division, $c_department);
+
+		$current = $line_num;
+		$c_email = '';
+		$c_name = '';
+		$c_title = '';
+        $c_division = '';
+        $c_department = '';
+	}
+
+
+	$c_email = $line if( $line =~ s/-200:.*\bemail: // );
+	$c_name = $line if( $line =~ s/-200:.*\bname: // );
+	$c_name = $line if( $line =~ s/-200:.*\bpretty_name: // );
+	$c_title = $line if( $line =~ s/-200:.*\btitle: // );
+	$c_division = $line if( $line =~ s/-200:.*\bdivision: // );
+	$c_department = $line if( $line =~ s/-200:.*\bdepartment: // );
+}
+
+
+if( $code == 200 )
+	{ &PrintEntry($c_email, $c_name, $c_title, $c_division, $c_department); }
+
+
+print SOCK "quit\r\n";
+close( SOCK );
+
+sub PrintEntry {
+	my( $email, $name, $title, $division, $department ) = @_;
+	my( @name, $name_part, $lname );
+
+    $name =~ tr/A-Z/a-z/;
+	@name = split(' ', $name );
+	$name = '';
+
+# $lname = shift @name;
+
+	foreach $name_part ( @name ) { 
+        $name .= "\u$name_part "; 
+    }
+
+# $name .= "\u$lname";
+    
+	if( not $email ) { 
+        $email = "--no-email-address--"; 
+    } else {
+        $email =~ tr/A-Z/a-z/;
+    }
+
+
+	if( not $title ) {
+		$title = "Student";
+	} else {
+        $title = "$division, $department";
+    }
+
+
+	print STDOUT "$email\t$name\t$title\n";
+}
+

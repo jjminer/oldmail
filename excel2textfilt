@@ -1,0 +1,27 @@
+#!/bin/sh
+# excel2text - convert MS Excel files to ASCII text
+#
+# Written by Gary Johnson, Agilent Technologies <gjohnson@agilent.com>.
+
+prog=${0##*/}
+
+file=/tmp/excel.$$.xls
+
+echo $file
+
+cat > $file
+
+htmlfile=$file.html
+
+if [ -f $htmlfile ]
+then
+    echo "$prog: $htmlfile already exists." >&2
+    exit 2
+fi
+
+echo $htmlfile
+
+$HOME/xlhtml/bin/xlhtml -te $file > $htmlfile
+links -dump $htmlfile | $PAGER
+rm -f $file
+rm -f $htmlfile

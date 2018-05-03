@@ -1,0 +1,3 @@
+#!/bin/sh
+echo New Mail:
+( grep -H -c -e '^Status: \(O\|N\)$' $MAIL ; grep -H -c -e '^Status: \(O\|N\)' ~/mail/* 2> /dev/null ) | grep -v -e ':0$' | grep -v -e '/home/miner/mail/backup:'

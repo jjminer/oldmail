@@ -1,0 +1,13 @@
+#!/bin/sh
+MAILDIRS=` grep -H -l -e '^Status: \(O\|N\)' ~/mail/* 2> /dev/null  | grep -v -e '/home/miner/mail/backup:'`
+
+rm -f /home/miner/newmail/*
+
+for dire in $MAILDIRS; do 
+    echo -n .
+    ln $dire /home/miner/newmail/`basename $dire` ;
+done
+
+rm -f /home/miner/newmail/backup
+
+echo

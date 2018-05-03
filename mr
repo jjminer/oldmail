@@ -1,0 +1,83 @@
+#!/bin/sh
+# 
+# bin/mr, DESCRIPTION
+# 
+# Copyright (C) 2003 Jonathan J. Miner
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# $Id:$
+# Jonathan J. Miner <miner@doit.wisc.edu>
+
+NO_IMAP=1
+
+if test "x$MUTT" = "x"; then
+    if test "x$MUTT_CMDLINE" = "x"; then
+        MUTT=$MUTT_CMDLINE
+    else
+        MUTT=mutt
+    fi
+fi
+
+if test "x$1" = "x-R"; then
+    RO="-R"
+    ROTEXT=" (Read-Only)"
+    shift
+else
+    RO=
+    ROTEXT=
+fi
+
+if test "x$1" = "x"; then
+    echo "Usage: $0 [-R] mailbox"
+    exit
+fi
+
+MAILDIR=$HOME/mail
+
+full_mbox=`echo $1 | sed "s,^[+=],$MAILDIR/,;s,/$,,"`
+mbox=`echo $full_mbox | sed "s,\\.gz,,"`
+prettybox=`echo $mbox | sed "s,\($MAILDIR/\)\|\(/$\),,g"`
+imap_mbox=`echo $1 | sed "s,^[+=],imap://localhost/mail/,;s,/$,,"`
+
+if test ! -e "$full_mbox" -a -r "$full_mbox.bz2"; then
+    full_mbox="$full_mbox.bz2"
+fi
+
+if test -r "$full_mbox" -a "$full_mbox" != "$mbox"; then
+    echo "Unzipping $full_mbox"
+    bunzip2 $full_mbox
+    GZIP=1
+    NO_IMAP=1
+fi
+
+if test -d "$mbox" -a -r "$mbox/curr"; then
+    mbox="$mbox/curr"
+    imap_mbox="$imap_mbox/curr"
+fi
+
+if test -r "$mbox"; then
+    Xtitle "$prettybox$ROTEXT"
+    if test "x$NO_IMAP" = "x"; then
+        $MUTT $RO -f "$imap_mbox"
+    else
+        $MUTT $RO -f "$mbox"
+    fi
+
+    Xtitle "$USER@$HOST - $PWD"
+else
+    echo "Unknown mailbox: \"$mbox\""
+fi
+
+if test "x$GZIP" = "x1"; then
+    echo "Zipping $mbox"
+    bzip2 -v $mbox
+fi

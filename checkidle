@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+# 
+# bin/checkidle, Check for non-idle sessions
+# 
+# Copyright (C) 2003 Jonathan J. Miner
+# 
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# Jonathan J. Miner <miner@doit.wisc.edu>
+
+use strict;
+
+my $name = $ENV{LOGNAME} || $ENV{USER};
+my $home = $ENV{HOME};
+my $maxidle = shift || 5;
+my $debug = 0;
+
+my $idlefile = "$home/.notidle";
+my $disableidle = "$home/.disableidle";
+
+unless ($name && $home) {
+    print "Usage: $0\n\n";
+    print "Set LOGNAME or USER environment variable to the user to check.\n";
+    print "Set HOME environment variable to the user's home directory.\n";
+    exit -1;
+}
+
+if ( -e $disableidle ) {
+    unlink $idlefile if (-e $idlefile);
+    exit 0;
+}
+
+my @who = `w -sh $name`;
+
+exit 0 unless (scalar @who);
+
+my @idles = map( (split( /\s+/, $_))[3], @who);
+
+my $notidle = 0;
+
+if ($debug) {
+    print join(",", @idles), "\n";
+}
+
+if (grep /^\d+\.\d+s$/, @idles) {
+    # A terminal has been idle for a number of seconds.
+    $notidle = 1;
+} elsif ( grep $_ < $maxidle, map( (split( /:/, $_))[0], grep /^\d+:\d+$/, @idles ) ) {
+    # A terminal has been idle for < maxidle minutes
+    $notidle = 1;
+}
+
+if ($debug) {
+    if ($notidle) {
+        print "Not Idle!\n";
+    } else {
+        print "Idle!\n";
+    }
+}
+
+if ($notidle && ! -e $idlefile) {
+    print "Creating $idlefile\n" if ($debug);
+    open( IDLE, "> $idlefile" );
+    print IDLE scalar localtime, "\n";
+    close IDLE;
+} elsif ( $notidle == 0 && -e $idlefile ) {
+    print "Deleting $idlefile\n" if ($debug);
+    unlink "$home/.notidle";
+}
